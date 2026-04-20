@@ -27,7 +27,7 @@ async function searchKakao(query: string, size = 10, sort = 'accuracy'): Promise
   }
   const data = await res.json()
   return (data.documents as Record<string, unknown>[])
-    .filter((d) => d.isbn)
+    .filter((d) => d.isbn && (d.contents as string))
     .map(toBookItem)
 }
 
