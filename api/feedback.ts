@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 import { getDb } from './_db.js'
+import type { UserProfile } from './_db.js'
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -15,8 +16,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const field = type === 'want' ? 'wantIsbns' : 'passIsbns'
   const opposite = type === 'want' ? 'passIsbns' : 'wantIsbns'
 
-  await db.collection('userProfiles').updateOne(
-    { _id: uid },
+  await db.collection<UserProfile>('userProfiles').updateOne(
+    { uid },
     {
       $addToSet: { [field]: isbn },
       $pull: { [opposite]: isbn },

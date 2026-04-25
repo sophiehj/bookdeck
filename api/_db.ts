@@ -12,7 +12,7 @@ export function getDb(): Promise<Db> {
 }
 
 export interface UserProfile {
-  _id: string        // Firebase uid
+  uid: string        // Firebase uid (filter key)
   wantIsbns: string[]
   passIsbns: string[]
   updatedAt: number
@@ -25,7 +25,7 @@ export interface GroupMember {
 }
 
 export interface BookGroup {
-  _id: string        // isbn
+  isbn: string       // (filter key)
   title: string
   members: GroupMember[]
   status: 'waiting' | 'active' | 'closed'

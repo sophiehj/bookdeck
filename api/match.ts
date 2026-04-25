@@ -27,21 +27,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const profiles = db.collection<UserProfile>('userProfiles')
   const groups = db.collection<BookGroup>('bookGroups')
 
-  // 현재 유저 프로필
-  const me = await profiles.findOne({ _id: uid })
+  const me = await profiles.findOne({ uid })
   const myWants = me?.wantIsbns ?? []
 
-  // 기존 그룹 확인
-  const existing = await groups.findOne({ _id: isbn })
+  const existing = await groups.findOne({ isbn })
   if (existing) {
     const alreadyIn = existing.members.some((m) => m.uid === uid)
     if (alreadyIn) return res.status(200).json(existing)
 
     if (existing.members.length < MAX_GROUP) {
-      // 그룹에 합류
       const othersWants = await Promise.all(
         existing.members.map(async (m) => {
-          const p = await profiles.findOne({ _id: m.uid })
+          const p = await profiles.findOne({ uid: m.uid })
           return p?.wantIsbns ?? []
         }),
       )
@@ -54,25 +51,22 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const newStatus = updatedMembers.length >= MIN_ACTIVE ? 'active' : 'waiting'
 
       await groups.updateOne(
-        { _id: isbn },
+        { isbn },
         { $push: { members: newMember }, $set: { status: newStatus } },
       )
       return res.status(200).json({ ...existing, members: updatedMembers, status: newStatus })
     }
 
-    // 그룹이 꽉 참 — 대기 상태 반환
     return res.status(200).json({ ...existing, full: true })
   }
 
-  // 같은 책 want한 다른 유저 검색
   const candidates = await profiles
-    .find({ _id: { $ne: uid }, wantIsbns: isbn })
+    .find({ uid: { $ne: uid }, wantIsbns: isbn })
     .limit(20)
     .toArray()
 
-  // Jaccard 유사도 계산 후 상위 4명 선택
   const ranked = candidates
-    .map((c) => ({ uid: c._id, similarity: jaccard(myWants, c.wantIsbns) }))
+    .map((c) => ({ uid: c.uid, similarity: jaccard(myWants, c.wantIsbns) }))
     .sort((a, b) => b.similarity - a.similarity)
     .slice(0, MAX_GROUP - 1)
 
@@ -82,7 +76,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   ]
 
   const group: BookGroup = {
-    _id: isbn,
+    isbn,
     title: title ?? '',
     members,
     status: members.length >= MIN_ACTIVE ? 'active' : 'waiting',

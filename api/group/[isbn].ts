@@ -13,7 +13,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (!isbn || typeof isbn !== 'string') return res.status(400).json({ error: 'isbn 필수' })
 
   const db = await getDb()
-  const group = await db.collection<BookGroup>('bookGroups').findOne({ _id: isbn })
+  const group = await db.collection<BookGroup>('bookGroups').findOne({ isbn })
 
   if (!group) return res.status(404).json({ error: '그룹 없음' })
   return res.status(200).json(group)
