@@ -7,6 +7,7 @@ import { ReviewCard } from '../components/ReviewCard'
 import { generateBookSummary } from '../services/ai'
 import { useReviews } from '../hooks/useReviews'
 import { useAuthStore } from '../store/authStore'
+import { GroupMatchSection } from '../components/GroupMatchSection'
 import type { BookItem, AISummary, ReactionType } from '../types'
 
 export function BookDetailPage() {
@@ -80,6 +81,21 @@ export function BookDetailPage() {
 
         {/* AI 요약 카드 */}
         <BookSummaryCard summary={summary} loading={summaryLoading} />
+
+        {/* 독서 모임 */}
+        {user ? (
+          <GroupMatchSection
+            isbn={book.isbn}
+            title={book.title}
+            uid={user.uid}
+            displayName={user.displayName ?? '독자'}
+          />
+        ) : (
+          <div className="rounded-2xl bg-white border border-[#E5E7EB] p-5 text-center space-y-2">
+            <p className="font-semibold text-[#2D2D2D]">독서 모임</p>
+            <p className="text-sm text-[#6B7280]">로그인하면 같은 취향의 독자와 함께 읽을 수 있어요</p>
+          </div>
+        )}
 
         {/* 서평 섹션 */}
         <div className="space-y-4">
