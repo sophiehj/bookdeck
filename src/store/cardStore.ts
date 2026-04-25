@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { fetchCategoryBooks, searchBooks, TRENDING_CATEGORIES } from '../services/bookApi'
 import { generateBookSummary } from '../services/ai'
 import { saveFeedback, getSeenIsbns, addToWantToRead } from '../services/firestore'
+import { syncFeedback } from '../services/mongoApi'
 import type { CardItem, FeedbackType, BookItem } from '../types'
 
 const BATCH = 5
@@ -135,6 +136,8 @@ export const useCardStore = create<CardStore>((set, get) => ({
         timestamp: Date.now(),
       })
       if (type === 'want') await addToWantToRead(userId, book.isbn)
+      // MongoDB 취향 프로필 동기화 (매칭용)
+      syncFeedback(userId, book.isbn, type).catch(() => {})
     }
 
     // 남은 카드 2장 이하 → 추가 로드
