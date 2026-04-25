@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import { getDb } from './_db'
-import type { UserProfile, BookGroup, GroupMember } from './_db'
+import { getDb } from './_db.js'
+import type { UserProfile, BookGroup, GroupMember } from './_db.js'
 
 const MAX_GROUP = 5
 const MIN_ACTIVE = 3
