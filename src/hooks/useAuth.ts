@@ -61,7 +61,8 @@ export function useAuth() {
         `?client_id=${KAKAO_REST_KEY}` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&response_type=code` +
-        `&scope=profile_nickname`
+        `&scope=profile_nickname` +
+        `&prompt=login`
 
       const popup = window.open(url, 'kakao-login', 'width=500,height=600,left=200,top=100')
 
