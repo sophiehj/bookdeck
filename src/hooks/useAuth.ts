@@ -35,18 +35,23 @@ export function useAuth() {
         if (settled) return
         settled = true
         window.removeEventListener('focus', onFocus)
+        window.removeEventListener('blur', onBlur)
         clearTimeout(cancelTimer)
         fn()
       }
 
-      // 팝업 닫고 메인 창으로 돌아오면 Firebase에 3초 유예 후 강제 종료
+      // 팝업 닫히면 focus가 메인 창으로 돌아옴 → 500ms 후 강제 종료
+      // blur: 사용자가 다시 팝업으로 돌아가면 타이머 취소 (오작동 방지)
       const onFocus = () => {
         cancelTimer = setTimeout(
           () => settle(() => reject(new Error('로그인 창이 닫혔습니다'))),
-          1500,
+          500,
         )
       }
+      const onBlur = () => clearTimeout(cancelTimer)
+
       window.addEventListener('focus', onFocus)
+      window.addEventListener('blur', onBlur)
 
       signInWithPopup(auth, googleProvider)
         .then(() => settle(resolve))
