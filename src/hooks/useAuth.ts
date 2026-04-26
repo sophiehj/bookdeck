@@ -43,7 +43,7 @@ export function useAuth() {
       const onFocus = () => {
         cancelTimer = setTimeout(
           () => settle(() => reject(new Error('로그인 창이 닫혔습니다'))),
-          3000,
+          1500,
         )
       }
       window.addEventListener('focus', onFocus)
@@ -61,8 +61,7 @@ export function useAuth() {
         `?client_id=${KAKAO_REST_KEY}` +
         `&redirect_uri=${encodeURIComponent(redirectUri)}` +
         `&response_type=code` +
-        `&scope=profile_nickname` +
-        `&prompt=login`
+        `&scope=profile_nickname`
 
       const popup = window.open(url, 'kakao-login', 'width=500,height=600,left=200,top=100')
 
