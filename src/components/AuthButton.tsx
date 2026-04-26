@@ -12,27 +12,36 @@ function GoogleIcon() {
   )
 }
 
+function KakaoIcon() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#3C1E1E" d="M12 3C6.477 3 2 6.477 2 10.8c0 2.7 1.7 5.1 4.3 6.6L5.1 21l4.6-2.4c.75.1 1.52.2 2.3.2 5.523 0 10-3.477 10-7.8S17.523 3 12 3z"/>
+    </svg>
+  )
+}
+
 export function AuthButton() {
-  const { user, signIn, signOut } = useAuth()
-  const [loading, setLoading] = useState(false)
+  const { user, signIn, signInWithKakao, signOut } = useAuth()
+  const [loading, setLoading] = useState<null | 'google' | 'kakao'>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSignIn = async () => {
-    setLoading(true)
+  const handleSignIn = async (provider: 'google' | 'kakao') => {
+    setLoading(provider)
     setError(null)
     try {
-      await signIn()
+      if (provider === 'google') await signIn()
+      else await signInWithKakao()
     } catch (e: unknown) {
       const code = (e as { code?: string })?.code
       if (code === 'auth/popup-blocked') {
-        setError('팝업이 차단됐습니다. 브라우저 주소창 오른쪽 팝업 차단 아이콘을 클릭해 허용해주세요.')
+        setError('팝업이 차단됐습니다. 브라우저에서 팝업을 허용해주세요.')
       } else if (code === 'auth/unauthorized-domain') {
         setError(`도메인 미등록 — Firebase Console Authorized domains에 "${window.location.hostname}" 추가 필요`)
       } else {
         setError('로그인에 실패했습니다. 다시 시도해주세요.')
       }
     } finally {
-      setLoading(false)
+      setLoading(null)
     }
   }
 
@@ -53,14 +62,22 @@ export function AuthButton() {
   }
 
   return (
-    <div className="flex flex-col items-end gap-1">
+    <div className="flex flex-col items-end gap-1.5">
       <button
-        onClick={handleSignIn}
-        disabled={loading}
-        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#2D2D2D] text-sm font-medium hover:bg-gray-50 active:bg-gray-100 transition-colors shadow-sm disabled:opacity-60 cursor-pointer"
+        onClick={() => handleSignIn('google')}
+        disabled={loading !== null}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-[#E5E7EB] text-[#2D2D2D] text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm disabled:opacity-60 cursor-pointer"
       >
         <GoogleIcon />
-        <span>{loading ? '로그인 중…' : 'Google로 로그인'}</span>
+        <span>{loading === 'google' ? '로그인 중…' : 'Google로 로그인'}</span>
+      </button>
+      <button
+        onClick={() => handleSignIn('kakao')}
+        disabled={loading !== null}
+        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#FEE500] text-[#3C1E1E] text-sm font-medium hover:bg-[#f5dc00] transition-colors shadow-sm disabled:opacity-60 cursor-pointer"
+      >
+        <KakaoIcon />
+        <span>{loading === 'kakao' ? '로그인 중…' : '카카오로 로그인'}</span>
       </button>
       {error && (
         <p className="text-xs text-red-400 max-w-[200px] text-right leading-tight">{error}</p>
