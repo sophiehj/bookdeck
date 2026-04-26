@@ -44,19 +44,6 @@ export function Layout({ children }: Props) {
             >
               <SearchIcon />
             </Link>
-            {user && (
-              <Link
-                to="/mypage"
-                className={`p-2 rounded-xl transition-colors ${pathname === '/mypage' ? 'text-[#C3B1E1] bg-[#C3B1E1]/10' : 'text-[#6B7280] hover:text-[#2D2D2D] hover:bg-gray-100'}`}
-                aria-label="마이페이지"
-              >
-                {user.photoURL ? (
-                  <img src={user.photoURL} alt="" className="w-5 h-5 rounded-full" />
-                ) : (
-                  <UserIcon />
-                )}
-              </Link>
-            )}
             <AuthButton />
           </div>
         </div>

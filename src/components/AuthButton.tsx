@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 function GoogleIcon() {
@@ -57,9 +58,15 @@ export function AuthButton() {
   if (user) {
     return (
       <div className="flex items-center gap-2">
-        {user.photoURL && (
-          <img src={user.photoURL} alt={user.displayName ?? ''} className="w-7 h-7 rounded-full" />
-        )}
+        <Link to="/mypage" className="flex items-center gap-1.5 group">
+          {user.photoURL ? (
+            <img src={user.photoURL} alt={user.displayName ?? ''} className="w-7 h-7 rounded-full ring-2 ring-transparent group-hover:ring-[#C3B1E1] transition-all" />
+          ) : (
+            <div className="w-7 h-7 rounded-full bg-[#C3B1E1]/30 flex items-center justify-center text-xs font-bold text-[#C3B1E1]">
+              {(user.displayName ?? '?')[0].toUpperCase()}
+            </div>
+          )}
+        </Link>
         <button
           onClick={signOut}
           className="text-xs text-[#6B7280] hover:text-[#2D2D2D] transition-colors"
