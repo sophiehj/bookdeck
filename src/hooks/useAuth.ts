@@ -38,17 +38,34 @@ export function useAuth() {
         `&response_type=code` +
         `&scope=profile_nickname`
 
-      window.open(url, 'kakao-login', 'width=500,height=600,left=200,top=100')
+      const popup = window.open(url, 'kakao-login', 'width=500,height=600,left=200,top=100')
 
       // BroadcastChannel: COOP 제약 없이 같은 origin 간 통신
       const channel = new BroadcastChannel('kakao_auth')
 
-      const timeout = setTimeout(() => {
+      const cleanup = (err?: Error) => {
         channel.close()
-        reject(new Error('로그인 시간 초과'))
+        clearTimeout(timeout)
+        window.removeEventListener('focus', onWindowFocus)
+        if (err) reject(err)
+      }
+
+      // 메인 창이 포커스 될 때 팝업이 닫혔는지 확인 (팝업 취소 감지)
+      const onWindowFocus = () => {
+        try {
+          if (popup?.closed) cleanup(new Error('로그인 창이 닫혔습니다'))
+        } catch {
+          // COOP으로 접근 불가한 경우 무시
+        }
+      }
+      window.addEventListener('focus', onWindowFocus)
+
+      const timeout = setTimeout(() => {
+        cleanup(new Error('로그인 시간 초과'))
       }, 5 * 60 * 1000)
 
       channel.onmessage = async (event: MessageEvent) => {
+        window.removeEventListener('focus', onWindowFocus)
         channel.close()
         clearTimeout(timeout)
 

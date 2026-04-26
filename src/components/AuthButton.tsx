@@ -32,13 +32,21 @@ export function AuthButton() {
       if (provider === 'google') await signIn()
       else await signInWithKakao()
     } catch (e: unknown) {
-      const code = (e as { code?: string })?.code
-      if (code === 'auth/popup-blocked') {
+      const code = (e as { code?: string })?.code ?? ''
+      const msg = (e as Error)?.message ?? String(e)
+      // 사용자가 직접 취소한 경우 — 에러 메시지 없이 조용히 리셋
+      if (
+        code === 'auth/popup-closed-by-user' ||
+        code === 'auth/cancelled-popup-request' ||
+        msg === '로그인 창이 닫혔습니다' ||
+        msg === '카카오 로그인 취소'
+      ) {
+        // no-op
+      } else if (code === 'auth/popup-blocked') {
         setError('팝업을 허용해주세요')
       } else if (code === 'auth/unauthorized-domain') {
         setError('도메인 미등록')
       } else {
-        const msg = (e as Error)?.message ?? String(e)
         setError(`로그인 실패: ${msg}`)
       }
     } finally {
