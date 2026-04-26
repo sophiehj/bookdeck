@@ -29,6 +29,16 @@ export async function addReview(review: Omit<Review, 'id'>): Promise<string> {
   return ref.id
 }
 
+export async function getMyReviews(userId: string): Promise<Review[]> {
+  const q = query(
+    collection(db, 'reviews'),
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc'),
+  )
+  const snap = await getDocs(q)
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Review))
+}
+
 export async function getReviewsByIsbn(isbn: string): Promise<Review[]> {
   const q = query(
     collection(db, 'reviews'),

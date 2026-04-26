@@ -1,5 +1,6 @@
 import { Link, useLocation } from 'react-router-dom'
 import { AuthButton } from './AuthButton'
+import { useAuthStore } from '../store/authStore'
 
 interface Props {
   children: React.ReactNode
@@ -14,8 +15,18 @@ function SearchIcon() {
   )
 }
 
+function UserIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  )
+}
+
 export function Layout({ children }: Props) {
   const { pathname } = useLocation()
+  const { user } = useAuthStore()
   const isSearch = pathname === '/search'
 
   return (
@@ -33,6 +44,19 @@ export function Layout({ children }: Props) {
             >
               <SearchIcon />
             </Link>
+            {user && (
+              <Link
+                to="/mypage"
+                className={`p-2 rounded-xl transition-colors ${pathname === '/mypage' ? 'text-[#C3B1E1] bg-[#C3B1E1]/10' : 'text-[#6B7280] hover:text-[#2D2D2D] hover:bg-gray-100'}`}
+                aria-label="마이페이지"
+              >
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="" className="w-5 h-5 rounded-full" />
+                ) : (
+                  <UserIcon />
+                )}
+              </Link>
+            )}
             <AuthButton />
           </div>
         </div>
