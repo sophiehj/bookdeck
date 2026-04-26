@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { fetchCategoryBooks, searchBooks, TRENDING_CATEGORIES } from '../services/bookApi'
-import { generateBookSummary } from '../services/ai'
-import { saveFeedback, getSeenIsbns, addToWantToRead } from '../services/firestore'
+import { generateBookSummary, generatePersonalizedReason } from '../services/ai'
+import { saveFeedback, getSeenIsbns, addToWantToRead, getFeedbackCounts } from '../services/firestore'
 import { syncFeedback } from '../services/mongoApi'
 import type { CardItem, FeedbackType, BookItem } from '../types'
 
@@ -15,6 +15,7 @@ interface CardStore {
   error: string | null
   seenIsbns: Set<string>
   tasteQuery: string
+  likedAuthors: string[]
 
   init: (userId?: string) => Promise<void>
   setTasteQuery: (query: string, userId?: string) => Promise<void>
@@ -53,12 +54,16 @@ export const useCardStore = create<CardStore>((set, get) => ({
   error: null,
   seenIsbns: new Set(),
   tasteQuery: '',
+  likedAuthors: [],
 
   async init(userId) {
     set({ loading: true, error: null })
     try {
-      const seen = userId ? await getSeenIsbns(userId) : new Set<string>()
-      set({ seenIsbns: seen })
+      const [seen, counts] = await Promise.all([
+        userId ? getSeenIsbns(userId) : Promise.resolve(new Set<string>()),
+        userId ? getFeedbackCounts(userId) : Promise.resolve({ likedAuthors: [], passedAuthors: [] }),
+      ])
+      set({ seenIsbns: seen, likedAuthors: counts.likedAuthors })
       await get().loadMore()
     } catch (e) {
       set({ error: (e as Error).message ?? '책을 불러오지 못했습니다.' })
@@ -69,8 +74,11 @@ export const useCardStore = create<CardStore>((set, get) => ({
 
   async setTasteQuery(query, userId) {
     categoryIndex = 0
-    const seen = userId ? await getSeenIsbns(userId) : new Set<string>()
-    set({ tasteQuery: query, cards: [], currentIndex: 0, loading: true, error: null, seenIsbns: seen })
+    const [seen, counts] = await Promise.all([
+      userId ? getSeenIsbns(userId) : Promise.resolve(new Set<string>()),
+      userId ? getFeedbackCounts(userId) : Promise.resolve({ likedAuthors: [], passedAuthors: [] }),
+    ])
+    set({ tasteQuery: query, cards: [], currentIndex: 0, loading: true, error: null, seenIsbns: seen, likedAuthors: counts.likedAuthors })
     try {
       await get().loadMore()
     } catch (e) {
@@ -81,10 +89,9 @@ export const useCardStore = create<CardStore>((set, get) => ({
   },
 
   async loadMore() {
-    const { seenIsbns, tasteQuery } = get()
+    const { seenIsbns, tasteQuery, likedAuthors } = get()
     const books = await fetchNextBatch(seenIsbns, tasteQuery || undefined)
 
-    // 책 기본 정보로 카드 즉시 추가 — 삽입 시점 인덱스를 state에서 직접 읽음
     const newCards: CardItem[] = books.map((book) => ({
       book,
       summary: null,
@@ -93,16 +100,34 @@ export const useCardStore = create<CardStore>((set, get) => ({
     const insertAt = get().cards.length
     set((state) => ({ cards: [...state.cards, ...newCards] }))
 
-    // AI 요약 병렬 로드 — 완료되는 순서대로 카드 업데이트
+    // AI 요약 로드 후 피드백 이력 있으면 reason 개인화
     books.forEach((book, i) => {
       const cardIndex = insertAt + i
       generateBookSummary(book)
-        .then((summary) => {
+        .then(async (summary) => {
+          // 기본 요약 먼저 표시
           set((state) => {
             const updated = [...state.cards]
             updated[cardIndex] = { ...updated[cardIndex], summary, summaryLoading: false }
             return { cards: updated }
           })
+          // 피드백 이력 있으면 reason 개인화 (비동기로 덮어쓰기)
+          if (likedAuthors.length > 0) {
+            const personalizedReason = await generatePersonalizedReason(book, likedAuthors).catch(() => '')
+            if (personalizedReason) {
+              set((state) => {
+                const updated = [...state.cards]
+                const card = updated[cardIndex]
+                if (card?.summary) {
+                  updated[cardIndex] = {
+                    ...card,
+                    summary: { ...card.summary, reason: personalizedReason },
+                  }
+                }
+                return { cards: updated }
+              })
+            }
+          }
         })
         .catch((err) => {
           console.error('[AI summary error]', book.isbn, err)
@@ -125,7 +150,6 @@ export const useCardStore = create<CardStore>((set, get) => ({
     newSeen.add(book.isbn)
     set({ seenIsbns: newSeen, currentIndex: currentIndex + 1 })
 
-    // 피드백 저장 (로그인 시)
     if (userId) {
       await saveFeedback({
         userId,
@@ -136,11 +160,18 @@ export const useCardStore = create<CardStore>((set, get) => ({
         timestamp: Date.now(),
       })
       if (type === 'want') await addToWantToRead(userId, book.isbn)
-      // MongoDB 취향 프로필 동기화 (매칭용)
       syncFeedback(userId, book.isbn, type).catch(() => {})
+
+      // 읽을래요 시 likedAuthors 즉시 업데이트 (다음 배치부터 반영)
+      if (type === 'want') {
+        const current = get().likedAuthors
+        const newAuthors = book.authors.filter((a) => !current.includes(a))
+        if (newAuthors.length > 0) {
+          set({ likedAuthors: [...current, ...newAuthors] })
+        }
+      }
     }
 
-    // 남은 카드 2장 이하 → 추가 로드
     const remaining = cards.length - (currentIndex + 1)
     if (remaining <= 2) await loadMore()
   },

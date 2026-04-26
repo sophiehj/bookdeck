@@ -24,6 +24,31 @@ function extractJson(raw: string): Record<string, string> | null {
   }
 }
 
+export async function generatePersonalizedReason(
+  book: BookItem,
+  likedAuthors: string[],
+  client = createAnthropicClient(),
+): Promise<string> {
+  const context =
+    likedAuthors.length > 0
+      ? `\n이 독자가 좋아한 저자: ${likedAuthors.slice(0, 5).join(', ')}`
+      : ''
+
+  const response = await client.messages.create({
+    model: 'claude-haiku-4-5-20251001',
+    max_tokens: 150,
+    messages: [
+      {
+        role: 'user',
+        content: `책: ${book.title} / 저자: ${book.authors.join(', ')} / 출판사: ${book.publisher}${context}
+위 독자에게 지금 이 책을 읽어야 할 이유를 한 문장으로 말해줘. 설명 없이 문장만 반환.`,
+      },
+    ],
+  })
+
+  return response.content[0].type === 'text' ? response.content[0].text.trim() : ''
+}
+
 export async function generateBookSummary(
   book: BookItem,
   client = createAnthropicClient(),
