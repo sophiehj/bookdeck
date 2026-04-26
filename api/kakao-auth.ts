@@ -17,34 +17,39 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const { accessToken } = req.body as { accessToken: string }
   if (!accessToken) return res.status(400).json({ error: 'accessToken 필수' })
 
-  // 카카오 유저 정보 조회
-  const kakaoRes = await fetch('https://kapi.kakao.com/v2/user/me', {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
-  if (!kakaoRes.ok) return res.status(401).json({ error: '카카오 인증 실패' })
-
-  const kakaoUser = (await kakaoRes.json()) as {
-    id: number
-    kakao_account?: {
-      email?: string
-      profile?: { nickname?: string; profile_image_url?: string }
-    }
-  }
-
-  const kakaoId = String(kakaoUser.id)
-  const uid = `kakao:${kakaoId}`
-  const displayName = kakaoUser.kakao_account?.profile?.nickname ?? '카카오 유저'
-  const email = kakaoUser.kakao_account?.email ?? undefined
-  const photoURL = kakaoUser.kakao_account?.profile?.profile_image_url ?? undefined
-
-  const auth = getAuth()
-
   try {
-    await auth.updateUser(uid, { displayName, email, photoURL })
-  } catch {
-    await auth.createUser({ uid, displayName, email, photoURL })
-  }
+    // 카카오 유저 정보 조회
+    const kakaoRes = await fetch('https://kapi.kakao.com/v2/user/me', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+    if (!kakaoRes.ok) return res.status(401).json({ error: '카카오 인증 실패' })
 
-  const customToken = await auth.createCustomToken(uid)
-  return res.status(200).json({ customToken })
+    const kakaoUser = (await kakaoRes.json()) as {
+      id: number
+      kakao_account?: {
+        email?: string
+        profile?: { nickname?: string; profile_image_url?: string }
+      }
+    }
+
+    const kakaoId = String(kakaoUser.id)
+    const uid = `kakao_${kakaoId}`
+    const displayName = kakaoUser.kakao_account?.profile?.nickname ?? '카카오 유저'
+    const photoURL = kakaoUser.kakao_account?.profile?.profile_image_url ?? undefined
+
+    const auth = getAuth()
+
+    try {
+      await auth.updateUser(uid, { displayName, photoURL })
+    } catch {
+      await auth.createUser({ uid, displayName, photoURL })
+    }
+
+    const customToken = await auth.createCustomToken(uid)
+    return res.status(200).json({ customToken })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[kakao-auth] error:', msg)
+    return res.status(500).json({ error: msg })
+  }
 }

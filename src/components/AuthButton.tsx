@@ -38,7 +38,8 @@ export function AuthButton() {
       } else if (code === 'auth/unauthorized-domain') {
         setError('도메인 미등록')
       } else {
-        setError('로그인 실패. 다시 시도해주세요')
+        const msg = (e as Error)?.message ?? String(e)
+        setError(`로그인 실패: ${msg}`)
       }
     } finally {
       setLoading(null)
