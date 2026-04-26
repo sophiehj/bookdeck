@@ -1,9 +1,10 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
-import * as admin from 'firebase-admin'
+import { initializeApp, getApps, cert } from 'firebase-admin/app'
+import { getAuth } from 'firebase-admin/auth'
 
-if (!admin.apps.length) {
+if (!getApps().length) {
   const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT!)
-  admin.initializeApp({ credential: admin.credential.cert(serviceAccount) })
+  initializeApp({ credential: cert(serviceAccount) })
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -36,13 +37,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   const email = kakaoUser.kakao_account?.email ?? undefined
   const photoURL = kakaoUser.kakao_account?.profile?.profile_image_url ?? undefined
 
-  // Firebase 유저 생성 또는 업데이트
+  const auth = getAuth()
+
   try {
-    await admin.auth().updateUser(uid, { displayName, email, photoURL })
+    await auth.updateUser(uid, { displayName, email, photoURL })
   } catch {
-    await admin.auth().createUser({ uid, displayName, email, photoURL })
+    await auth.createUser({ uid, displayName, email, photoURL })
   }
 
-  const customToken = await admin.auth().createCustomToken(uid)
+  const customToken = await auth.createCustomToken(uid)
   return res.status(200).json({ customToken })
 }
