@@ -46,7 +46,7 @@ export function useAuth() {
     await loadKakaoSDK()
     return new Promise<void>((resolve, reject) => {
       window.Kakao.Auth.login({
-        scope: 'profile_nickname,profile_image',
+        scope: 'profile_nickname',
         success: async (authObj) => {
           try {
             const res = await fetch(`${API_BASE}/api/kakao-auth`, {
