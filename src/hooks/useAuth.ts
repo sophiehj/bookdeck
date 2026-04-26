@@ -46,6 +46,7 @@ export function useAuth() {
     await loadKakaoSDK()
     return new Promise<void>((resolve, reject) => {
       window.Kakao.Auth.login({
+        scope: 'profile_nickname,profile_image',
         success: async (authObj) => {
           try {
             const res = await fetch(`${API_BASE}/api/kakao-auth`, {
@@ -53,15 +54,22 @@ export function useAuth() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ accessToken: authObj.access_token }),
             })
-            if (!res.ok) throw new Error('카카오 인증 서버 오류')
+            if (!res.ok) {
+              const body = await res.json().catch(() => ({}))
+              throw new Error(`카카오 인증 서버 오류 (${res.status}): ${JSON.stringify(body)}`)
+            }
             const { customToken } = await res.json()
             await signInWithCustomToken(auth, customToken)
             resolve()
           } catch (e) {
+            console.error('[kakao] success callback error:', e)
             reject(e)
           }
         },
-        fail: reject,
+        fail: (err) => {
+          console.error('[kakao] login fail:', err)
+          reject(err)
+        },
       })
     })
   }

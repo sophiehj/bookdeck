@@ -11,6 +11,7 @@ interface KakaoStatic {
   isInitialized(): boolean
   Auth: {
     login(settings: {
+      scope?: string
       success: (authObj: KakaoAuthObj) => void
       fail: (err: unknown) => void
     }): void
