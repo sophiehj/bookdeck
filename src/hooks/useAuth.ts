@@ -26,7 +26,32 @@ export function useAuth() {
     return unsubscribe
   }, [setUser, setLoading])
 
-  const signIn = () => signInWithPopup(auth, googleProvider)
+  const signIn = () =>
+    new Promise<void>((resolve, reject) => {
+      let settled = false
+      let cancelTimer: ReturnType<typeof setTimeout>
+
+      const settle = (fn: () => void) => {
+        if (settled) return
+        settled = true
+        window.removeEventListener('focus', onFocus)
+        clearTimeout(cancelTimer)
+        fn()
+      }
+
+      // 팝업 닫고 메인 창으로 돌아오면 Firebase에 3초 유예 후 강제 종료
+      const onFocus = () => {
+        cancelTimer = setTimeout(
+          () => settle(() => reject(new Error('로그인 창이 닫혔습니다'))),
+          3000,
+        )
+      }
+      window.addEventListener('focus', onFocus)
+
+      signInWithPopup(auth, googleProvider)
+        .then(() => settle(resolve))
+        .catch((e) => settle(() => reject(e)))
+    })
 
   const signInWithKakao = () =>
     new Promise<void>((resolve, reject) => {
