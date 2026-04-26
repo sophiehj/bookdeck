@@ -38,6 +38,11 @@ export async function fetchMessages(isbn: string): Promise<Message[]> {
   return get<Message[]>(`/api/messages/${isbn}`)
 }
 
+// AI 모더레이터 토론 질문 생성 (그룹 active 시 1회)
+export async function triggerModerator(isbn: string, title: string, authors: string[]) {
+  return post('/api/moderate', { isbn, title, authors }).catch(() => {})
+}
+
 // 채팅 메시지 전송
 export async function sendMessage(
   isbn: string,

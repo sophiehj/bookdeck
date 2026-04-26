@@ -1,16 +1,17 @@
 import { useState, useEffect } from 'react'
-import { matchGroup, fetchGroup } from '../services/mongoApi'
+import { matchGroup, fetchGroup, triggerModerator } from '../services/mongoApi'
 import { GroupChat } from './GroupChat'
 import type { BookGroup } from '../services/mongoApi'
 
 interface Props {
   isbn: string
   title: string
+  authors: string[]
   uid: string
   displayName: string
 }
 
-export function GroupMatchSection({ isbn, title, uid, displayName }: Props) {
+export function GroupMatchSection({ isbn, title, authors, uid, displayName }: Props) {
   const [group, setGroup] = useState<BookGroup | null>(null)
   const [loading, setLoading] = useState(true)
   const [joining, setJoining] = useState(false)
@@ -27,6 +28,10 @@ export function GroupMatchSection({ isbn, title, uid, displayName }: Props) {
     try {
       const g = await matchGroup(uid, isbn, title)
       setGroup(g)
+      // 그룹이 active가 되면 AI 모더레이터 토론 질문 생성 (중복 방지는 서버에서 처리)
+      if (g.status === 'active') {
+        triggerModerator(isbn, title, authors)
+      }
     } finally {
       setJoining(false)
     }

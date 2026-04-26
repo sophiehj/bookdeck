@@ -6,7 +6,9 @@ import { syncFeedback } from '../services/mongoApi'
 import type { CardItem, FeedbackType, BookItem } from '../types'
 
 const BATCH = 5
+const LIKED_AUTHOR_PER_BATCH = 2  // 배치당 좋아한 저자 책 최대 2권
 let categoryIndex = 0
+let likedAuthorIndex = 0
 
 interface CardStore {
   cards: CardItem[]
@@ -23,7 +25,11 @@ interface CardStore {
   loadMore: () => Promise<void>
 }
 
-async function fetchNextBatch(seenIsbns: Set<string>, tasteQuery?: string): Promise<BookItem[]> {
+async function fetchNextBatch(
+  seenIsbns: Set<string>,
+  tasteQuery?: string,
+  likedAuthors: string[] = [],
+): Promise<BookItem[]> {
   const results: BookItem[] = []
 
   if (tasteQuery) {
@@ -33,6 +39,16 @@ async function fetchNextBatch(seenIsbns: Set<string>, tasteQuery?: string): Prom
     return results
   }
 
+  // 좋아한 저자 기반 우선 추천 (배치당 최대 LIKED_AUTHOR_PER_BATCH권)
+  if (likedAuthors.length > 0) {
+    const author = likedAuthors[likedAuthorIndex % likedAuthors.length]
+    likedAuthorIndex++
+    const books = await searchBooks(author)
+    const fresh = books.filter((b) => b.isbn && !seenIsbns.has(b.isbn))
+    results.push(...fresh.slice(0, LIKED_AUTHOR_PER_BATCH))
+  }
+
+  // 나머지는 카테고리 로테이션으로 채움
   let attempts = 0
   while (results.length < BATCH && attempts < TRENDING_CATEGORIES.length * 2) {
     const cat = TRENDING_CATEGORIES[categoryIndex % TRENDING_CATEGORIES.length]
@@ -74,6 +90,7 @@ export const useCardStore = create<CardStore>((set, get) => ({
 
   async setTasteQuery(query, userId) {
     categoryIndex = 0
+    likedAuthorIndex = 0
     const [seen, counts] = await Promise.all([
       userId ? getSeenIsbns(userId) : Promise.resolve(new Set<string>()),
       userId ? getFeedbackCounts(userId) : Promise.resolve({ likedAuthors: [], passedAuthors: [] }),
@@ -90,7 +107,7 @@ export const useCardStore = create<CardStore>((set, get) => ({
 
   async loadMore() {
     const { seenIsbns, tasteQuery, likedAuthors } = get()
-    const books = await fetchNextBatch(seenIsbns, tasteQuery || undefined)
+    const books = await fetchNextBatch(seenIsbns, tasteQuery || undefined, likedAuthors)
 
     const newCards: CardItem[] = books.map((book) => ({
       book,

@@ -87,6 +87,7 @@ export function BookDetailPage() {
           <GroupMatchSection
             isbn={book.isbn}
             title={book.title}
+            authors={book.authors}
             uid={user.uid}
             displayName={user.displayName ?? '독자'}
           />
