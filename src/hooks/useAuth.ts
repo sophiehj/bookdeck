@@ -38,14 +38,19 @@ export function useAuth() {
         `&response_type=code` +
         `&scope=profile_nickname`
 
-      const popup = window.open(url, 'kakao-login', 'width=500,height=600,left=200,top=100')
+      window.open(url, 'kakao-login', 'width=500,height=600,left=200,top=100')
 
-      const handler = async (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return
-        if (event.data?.type !== 'kakao-auth-code') return
+      // BroadcastChannel: COOP 제약 없이 같은 origin 간 통신
+      const channel = new BroadcastChannel('kakao_auth')
 
-        window.removeEventListener('message', handler)
-        clearInterval(timer)
+      const timeout = setTimeout(() => {
+        channel.close()
+        reject(new Error('로그인 시간 초과'))
+      }, 5 * 60 * 1000)
+
+      channel.onmessage = async (event: MessageEvent) => {
+        channel.close()
+        clearTimeout(timeout)
 
         const { code, error } = event.data as { type: string; code?: string; error?: string }
         if (error || !code) return reject(new Error(error ?? '카카오 로그인 취소'))
@@ -68,16 +73,6 @@ export function useAuth() {
           reject(e)
         }
       }
-
-      window.addEventListener('message', handler)
-
-      const timer = setInterval(() => {
-        if (popup?.closed) {
-          clearInterval(timer)
-          window.removeEventListener('message', handler)
-          reject(new Error('로그인 창이 닫혔습니다'))
-        }
-      }, 500)
     })
 
   const signOutUser = () => signOut(auth)

@@ -8,13 +8,10 @@ export function KakaoCallbackPage() {
     const code = params.get('code')
     const error = params.get('error')
 
-    if (window.opener) {
-      window.opener.postMessage(
-        { type: 'kakao-auth-code', code, error },
-        window.location.origin,
-      )
-      window.close()
-    }
+    const channel = new BroadcastChannel('kakao_auth')
+    channel.postMessage({ type: 'kakao-auth-code', code, error })
+    channel.close()
+    window.close()
   }, [params])
 
   return (
