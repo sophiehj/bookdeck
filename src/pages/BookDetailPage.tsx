@@ -8,6 +8,8 @@ import { generateBookSummary } from '../services/ai'
 import { useReviews } from '../hooks/useReviews'
 import { useAuthStore } from '../store/authStore'
 import { GroupMatchSection } from '../components/GroupMatchSection'
+import { DisqusComments } from '../components/DisqusComments'
+import { AdBanner } from '../components/AdBanner'
 import type { BookItem, AISummary, ReactionType } from '../types'
 
 export function BookDetailPage() {
@@ -82,6 +84,9 @@ export function BookDetailPage() {
         {/* AI 요약 카드 */}
         <BookSummaryCard summary={summary} loading={summaryLoading} />
 
+        {/* 광고 */}
+        <AdBanner slot="YOUR_AD_SLOT_ID" />
+
         {/* 독서 모임 */}
         {user ? (
           <GroupMatchSection
@@ -150,6 +155,9 @@ export function BookDetailPage() {
             />
           ))}
         </div>
+
+        {/* Disqus 댓글 */}
+        <DisqusComments isbn={book.isbn} />
       </div>
     </Layout>
   )
