@@ -6,7 +6,7 @@ interface Props {
 
 export function DisqusComments({ isbn }: Props) {
   useEffect(() => {
-    const pageUrl = window.location.href
+    const pageUrl = `${window.location.origin}/book/${isbn}`
     const pageIdentifier = `book-${isbn}`
 
     window.disqus_config = function (this: DisqusConfig) {
@@ -21,6 +21,12 @@ export function DisqusComments({ isbn }: Props) {
       s.src = 'https://booklip.disqus.com/embed.js'
       s.setAttribute('data-timestamp', String(+new Date()))
       ;(document.head || document.body).appendChild(s)
+    }
+
+    return () => {
+      if (window.DISQUS) {
+        window.DISQUS.reset({ reload: false, config: window.disqus_config })
+      }
     }
   }, [isbn])
 
