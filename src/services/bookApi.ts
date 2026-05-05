@@ -1,10 +1,6 @@
 import type { BookItem, Category } from '../types'
 
-// 개발: Vite 프록시(카카오 API 키는 vite.config에서 주입)
-// 운영: Cloudflare Worker
-const PROXY = import.meta.env.DEV
-  ? '/kakao-api/v3/search/book'
-  : 'https://bookdeck-proxy.sophie-hjpark.workers.dev'
+const PROXY = import.meta.env.DEV ? '/kakao-api/v3/search/book' : '/api/books'
 
 function toBookItem(doc: Record<string, unknown>): BookItem {
   return {
