@@ -2,9 +2,9 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { AISummary, BookItem } from '../types'
 import { getCachedSummary, saveCachedSummary } from './firestore'
 
-const SYSTEM_PROMPT = `You are a Korean book editor creating summary cards for a reading app.
+const SYSTEM_PROMPT = `You are a Korean book editor creating short summary cards for a shorts-style reading app.
 Given book metadata, return ONLY a valid JSON object with no markdown, no explanation, no code fences.
-All values must be in Korean. Keep each field concise.`
+All values must be in Korean. Be concise — each field is one sentence only.`
 
 export function createAnthropicClient() {
   return new Anthropic({
@@ -24,31 +24,6 @@ function extractJson(raw: string): Record<string, string> | null {
   }
 }
 
-export async function generatePersonalizedReason(
-  book: BookItem,
-  likedAuthors: string[],
-  client = createAnthropicClient(),
-): Promise<string> {
-  const context =
-    likedAuthors.length > 0
-      ? `\n이 독자가 좋아한 저자: ${likedAuthors.slice(0, 5).join(', ')}`
-      : ''
-
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 150,
-    messages: [
-      {
-        role: 'user',
-        content: `책: ${book.title} / 저자: ${book.authors.join(', ')} / 출판사: ${book.publisher}${context}
-위 독자에게 지금 이 책을 읽어야 할 이유를 한 문장으로 말해줘. 설명 없이 문장만 반환.`,
-      },
-    ],
-  })
-
-  return response.content[0].type === 'text' ? response.content[0].text.trim() : ''
-}
-
 export async function generateBookSummary(
   book: BookItem,
   client = createAnthropicClient(),
@@ -62,7 +37,7 @@ export async function generateBookSummary(
 
   const response = await client.messages.create({
     model: 'claude-haiku-4-5-20251001',
-    max_tokens: 800,
+    max_tokens: 300,
     system: SYSTEM_PROMPT,
     messages: [
       {
@@ -73,7 +48,7 @@ export async function generateBookSummary(
 ${synopsis}
 
 아래 JSON 형식으로만 응답 (마크다운·설명 없이):
-{"hook":"한 줄 핵심 문장","plot":"세계관·갈등 소개 2문장","message":"저자의 중심 통찰 1문장","recommend":"~하는 당신에게 (1문장)","reason":"지금 이 책이 필요한 이유 1문장"}`,
+{"line1":"이 책의 핵심 내용 또는 가장 인상적인 한 장면 (1문장)","line2":"이런 독자에게 맞다 — ~하는 당신에게 (1문장)"}`,
       },
     ],
   })
@@ -87,11 +62,8 @@ ${synopsis}
   }
 
   const summary: AISummary = {
-    hook: parsed.hook ?? '',
-    plot: parsed.plot ?? '',
-    message: parsed.message ?? '',
-    recommend: parsed.recommend ?? '',
-    reason: parsed.reason ?? '',
+    line1: parsed.line1 ?? '',
+    line2: parsed.line2 ?? '',
     cachedAt: Date.now(),
   }
 

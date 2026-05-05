@@ -1,7 +1,10 @@
-import type { BookItem } from '../types'
+import type { BookItem, Category } from '../types'
 
-// Cloudflare Worker 프록시 (Kakao Books API CORS 우회)
-const PROXY = 'https://booklip-proxy.sophie-hjpark.workers.dev'
+// 개발: Vite 프록시(카카오 API 키는 vite.config에서 주입)
+// 운영: Cloudflare Worker
+const PROXY = import.meta.env.DEV
+  ? '/kakao-api/v3/search/book'
+  : 'https://bookdeck-proxy.sophie-hjpark.workers.dev'
 
 function toBookItem(doc: Record<string, unknown>): BookItem {
   return {
@@ -31,11 +34,16 @@ async function searchKakao(query: string, size = 10, sort = 'accuracy'): Promise
     .map(toBookItem)
 }
 
-export const TRENDING_CATEGORIES = [
-  { label: '📖 소설', query: '소설' },
-  { label: '🌱 자기계발', query: '자기계발' },
-  { label: '💬 에세이', query: '에세이' },
-  { label: '💰 경제·경영', query: '경제경영' },
+export const CATEGORIES: Category[] = [
+  { label: '자기계발', query: '자기계발',  color: '#FFDAC1' },
+  { label: '소설',    query: '소설',       color: '#C3B1E1' },
+  { label: '에세이',  query: '에세이',     color: '#B5EAD7' },
+  { label: '경제·경영', query: '경제경영', color: '#FFEAA7' },
+  { label: '역사',    query: '역사',       color: '#B8E4F9' },
+  { label: '과학',    query: '과학',       color: '#C7E9B0' },
+  { label: '인문',    query: '인문',       color: '#F7C5C5' },
+  { label: '사회',    query: '사회',       color: '#FAD4B4' },
+  { label: '예술',    query: '예술',       color: '#D4C5F9' },
 ]
 
 export async function fetchCategoryBooks(query: string, size = 10): Promise<BookItem[]> {

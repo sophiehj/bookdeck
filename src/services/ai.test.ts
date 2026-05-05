@@ -19,15 +19,11 @@ const mockBook: BookItem = {
 }
 
 const mockSummary: AISummary = {
-  hook: '나는 꿈을 꿨어.',
-  plot: '채식을 선언한 영혜와 가족의 갈등.',
-  message: '폭력과 억압에 맞서는 개인의 저항.',
-  recommend: '일상의 폭력을 직시하고 싶은 당신에게',
-  reason: '삶의 무게를 느끼는 당신에게 지금 필요한 책',
+  line1: '채식을 선언한 영혜의 조용한 저항이 가족 전체를 흔든다.',
+  line2: '일상의 억압을 직시하고 싶은 당신에게.',
   cachedAt: Date.now(),
 }
 
-// 가짜 Anthropic client
 function makeMockClient(responseText: string) {
   return {
     messages: {
@@ -58,14 +54,14 @@ describe('generateBookSummary', () => {
     const result = await generateBookSummary(mockBook, mockClient)
 
     expect(mockClient.messages.create).toHaveBeenCalledOnce()
-    expect(result.hook).toBe(mockSummary.hook)
+    expect(result.line1).toBe(mockSummary.line1)
     expect(firestore.saveCachedSummary).toHaveBeenCalledWith(
       mockBook.isbn,
-      expect.objectContaining({ hook: mockSummary.hook }),
+      expect.objectContaining({ line1: mockSummary.line1 }),
     )
   })
 
-  it('LLM 호출 시 max_tokens 400, Haiku 모델을 사용한다', async () => {
+  it('LLM 호출 시 max_tokens 300, Haiku 모델을 사용한다', async () => {
     vi.mocked(firestore.getCachedSummary).mockResolvedValueOnce(null)
     vi.mocked(firestore.saveCachedSummary).mockResolvedValueOnce(undefined)
     const mockClient = makeMockClient(JSON.stringify(mockSummary))
@@ -75,7 +71,7 @@ describe('generateBookSummary', () => {
     expect(mockClient.messages.create).toHaveBeenCalledWith(
       expect.objectContaining({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 400,
+        max_tokens: 300,
       }),
     )
   })

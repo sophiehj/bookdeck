@@ -1,5 +1,4 @@
 import { Link, useLocation } from 'react-router-dom'
-import { AuthButton } from './AuthButton'
 
 interface Props {
   children: React.ReactNode
@@ -23,18 +22,15 @@ export function Layout({ children }: Props) {
       <header className="sticky top-0 z-50 bg-white/80 backdrop-blur border-b border-[#E5E7EB]">
         <div className="max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/" className="font-bold text-lg text-[#2D2D2D] tracking-tight">
-            📚 booklip
+            📚 bookdeck
           </Link>
-          <div className="flex items-center gap-3">
-            <Link
-              to={isSearch ? '/' : '/search'}
-              className="p-2 rounded-xl text-[#6B7280] hover:text-[#2D2D2D] hover:bg-gray-100 transition-colors"
-              aria-label="검색"
-            >
-              <SearchIcon />
-            </Link>
-            <AuthButton />
-          </div>
+          <Link
+            to={isSearch ? '/' : '/search'}
+            className="p-2 rounded-xl text-[#6B7280] hover:text-[#2D2D2D] hover:bg-gray-100 transition-colors"
+            aria-label="검색"
+          >
+            <SearchIcon />
+          </Link>
         </div>
       </header>
       <main className="max-w-lg mx-auto px-4 py-6">{children}</main>

@@ -6,7 +6,7 @@ let dbPromise: Promise<Db>
 export function getDb(): Promise<Db> {
   if (!dbPromise) {
     client = new MongoClient(process.env.MONGODB_URI!)
-    dbPromise = client.connect().then((c) => c.db('booklip'))
+    dbPromise = client.connect().then((c) => c.db('bookdeck'))
   }
   return dbPromise
 }

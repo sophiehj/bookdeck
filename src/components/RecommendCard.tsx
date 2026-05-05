@@ -16,68 +16,55 @@ export function RecommendCard({ card, style, onDragStart }: Props) {
       onMouseDown={onDragStart}
       onTouchStart={onDragStart}
     >
-      {/* 상단: 파스텔 배경 — 한 문장 + 책 표지 */}
-      <div className="bg-[#EDE9F8] px-5 pt-5 pb-4 flex items-start gap-4 shrink-0">
-        <div className="flex-1 space-y-2">
-          <p className="text-xs font-semibold text-[#9b7fd4] tracking-widest uppercase">한 문장</p>
-          {summaryLoading ? (
-            <div className="space-y-2 pt-1">
-              <div className="h-3 bg-[#C3B1E1]/40 rounded animate-pulse w-full" />
-              <div className="h-3 bg-[#C3B1E1]/40 rounded animate-pulse w-4/5" />
-            </div>
-          ) : (
-            <p className="font-bold text-[#2D2D2D] text-base leading-snug line-clamp-3">
-              "{summary?.hook ?? '—'}"
-            </p>
-          )}
-        </div>
-        {book.thumbnail && (
+      {/* 책 표지 — 상단 55% */}
+      <div
+        className="relative shrink-0 bg-[#F3F0FB] flex items-center justify-center"
+        style={{ height: '55%' }}
+      >
+        {book.thumbnail ? (
           <img
-            src={book.thumbnail}
+            src={(() => {
+              try {
+                const fname = new URL(book.thumbnail).searchParams.get('fname')
+                return fname ?? book.thumbnail
+              } catch {
+                return book.thumbnail
+              }
+            })()}
             alt={book.title}
-            className="w-20 h-28 object-cover rounded-xl shadow-md shrink-0"
+            className="h-full w-auto max-w-full object-contain drop-shadow-md"
             draggable={false}
           />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-6xl">📖</div>
         )}
       </div>
 
-      {/* 하단: 흰 배경 — 제목·줄거리·이유 */}
-      <div className="flex-1 flex flex-col px-5 pt-4 pb-3 gap-3 min-h-0">
-
-        {/* 제목 · 저자 */}
+      {/* 책 정보 + 2문장 요약 — 하단 45% */}
+      <div className="flex flex-col flex-1 px-5 pt-4 pb-5 gap-3 min-h-0">
         <div className="shrink-0">
           <h2 className="font-bold text-[#2D2D2D] text-lg leading-snug line-clamp-1">{book.title}</h2>
           <p className="text-sm text-[#6B7280] mt-0.5 line-clamp-1">{book.authors.join(', ')} · {book.publisher}</p>
         </div>
 
-        {/* 줄거리 */}
-        <div className="flex-1 min-h-0">
-          <p className="text-xs font-semibold text-[#6B7280] mb-1">📖 줄거리</p>
+        <div className="flex-1 min-h-0 space-y-2">
           {summaryLoading ? (
-            <div className="space-y-2">
+            <>
               <div className="h-3 bg-[#E5E7EB] rounded animate-pulse w-full" />
               <div className="h-3 bg-[#E5E7EB] rounded animate-pulse w-11/12" />
-              <div className="h-3 bg-[#E5E7EB] rounded animate-pulse w-4/5" />
-            </div>
+              <div className="h-3 bg-[#C3B1E1]/30 rounded animate-pulse w-4/5 mt-2" />
+            </>
           ) : (
-            <p className="text-sm text-[#2D2D2D] leading-relaxed line-clamp-6">
-              {summary?.plot ?? '—'}
-            </p>
+            <>
+              <p className="text-sm text-[#2D2D2D] leading-relaxed line-clamp-2">
+                {summary?.line1 ?? '—'}
+              </p>
+              <p className="text-sm text-[#6B7280] leading-relaxed line-clamp-2 italic">
+                {summary?.line2 ?? '—'}
+              </p>
+            </>
           )}
         </div>
-
-        {/* 당신에게 맞는 이유 */}
-        <div className="rounded-2xl bg-[#FFF8F3] border border-[#FFDAC1]/60 px-4 py-3 shrink-0">
-          <p className="text-xs font-semibold text-[#d4936b] mb-1">✨ 당신에게 맞는 이유</p>
-          {summaryLoading ? (
-            <div className="h-3 bg-[#FFDAC1]/40 rounded animate-pulse w-4/5" />
-          ) : (
-            <p className="text-sm text-[#2D2D2D] leading-relaxed line-clamp-2">
-              {summary?.reason ?? '—'}
-            </p>
-          )}
-        </div>
-
       </div>
     </div>
   )
